@@ -587,7 +587,7 @@ go mod graph
 
 MIT License
 
-Copyright (c) 2025 Darshit Vvora
+Copyright (c) 2025 Darshit Vora
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

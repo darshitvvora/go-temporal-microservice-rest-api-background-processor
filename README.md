@@ -1,4 +1,4 @@
-# Go Temporal Microservice Boilerplate
+# Go Temporal Microservice Boilerplate (Sync/Async-Background handover)
 
 A beginner-friendly boilerplate for building microservices with Go and Temporal. This project demonstrates how to create a distributed workflow system with a REST API and background workers.
 
@@ -37,6 +37,31 @@ worker-business-logic-project (Worker)
 Temporal Server (stores result)
     ↓
 User can query status via API
+```
+
+**Sequence Diagram**
+
+The following Mermaid sequence diagram shows the high-level interaction between the API, Temporal server, worker and the user when triggering a workflow:
+
+```mermaid
+sequenceDiagram
+  participant User as User (HTTP)
+  participant API as workflow-trigger-project (API)
+  participant Temporal as Temporal Server
+  participant Worker as worker-business-logic-project (Worker)
+
+  User->>API: POST /api/workflow/trigger {name}
+  API->>Temporal: StartWorkflow (workflowId, input)
+  Temporal-->>API: WorkflowStarted (workflowId, runId)
+  Temporal->>Worker: Task assigned on Task Queue
+  Worker->>Worker: Execute Workflow
+  Worker->>Worker: Run Activity(SayHelloActivity)
+  Worker-->>Temporal: WorkflowCompleted (result)
+  API->>User: 202 Accepted {workflowId, runId}
+  User->>API: GET /api/workflow/status/:workflowId
+  API->>Temporal: QueryWorkflow (workflowId, runId)
+  Temporal-->>API: WorkflowStatus (completed/result)
+  API-->>User: 200 OK {status, result}
 ```
 
 ## Prerequisites
@@ -162,7 +187,7 @@ Verify by opening [http://localhost:8233](http://localhost:8233) in your browser
 ```bash
 cd /path/where/you/want/the/project
 # If you haven't already, navigate to the project directory
-cd go-temporal-microservice
+cd go-temporal-microservice-rest-api-background-processor
 ```
 
 ### Step 3: Install Dependencies
@@ -226,7 +251,7 @@ Now you have all three services running (Temporal Server, Worker, and API). Let'
 ```bash
 curl -X POST http://localhost:3000/api/workflow/trigger \
   -H "Content-Type: application/json" \
-  -d '{"name": "John"}'
+  -d '{"name": "Darshit"}'
 ```
 
 **Method 2: Using a REST client like Postman or Insomnia**
@@ -236,7 +261,7 @@ curl -X POST http://localhost:3000/api/workflow/trigger \
 - Body:
   ```json
   {
-    "name": "John"
+    "name": "Darshit"
   }
   ```
 
@@ -266,7 +291,7 @@ curl http://localhost:3000/api/workflow/status/hello-workflow-1234567890
   "runId": "some-unique-run-id",
   "status": "completed",
   "result": {
-    "message": "Hello, John! Welcome to Temporal."
+    "message": "Hello, Darshit! Welcome to Temporal."
   }
 }
 ```
@@ -291,7 +316,7 @@ Let's break down what happens when you trigger a workflow:
 ### 4. Workflow Executes Activity
 - The `HelloWorkflow` function in [workflow.go](worker-business-logic-project/workflow.go#L17) runs
 - It calls the `SayHelloActivity` function from [activity.go](worker-business-logic-project/activity.go#L8)
-- The activity generates the greeting message: "Hello, John! Welcome to Temporal."
+- The activity generates the greeting message: "Hello, Darshit! Welcome to Temporal."
 
 ### 5. Result is Stored
 - Temporal stores the result
@@ -538,31 +563,13 @@ go mod tidy
 go mod graph
 ```
 
-## Next Steps
-
-Once you're comfortable with this boilerplate:
-
-1. **Learn More About Temporal**: Visit [learn.temporal.io](https://learn.temporal.io)
-2. **Add Database**: Integrate PostgreSQL or MongoDB for data persistence
-3. **Add Authentication**: Implement JWT or OAuth for secure APIs
-4. **Add More Activities**:
-   - Send emails with SendGrid or AWS SES
-   - Process images or videos
-   - Call external APIs
-   - Perform database operations
-5. **Add Tests**: Write unit tests for workflows and activities
-6. **Deploy**: Deploy to AWS, GCP, or Azure with Temporal Cloud
-7. **Add Logging**: Integrate structured logging with zerolog or zap
-8. **Add Metrics**: Monitor performance with Prometheus
-9. **Add Long-Running Workflows**: Implement workflows that wait for signals or run for days
-10. **Error Handling**: Add retry policies and error handling strategies
-
 ## Resources for Learning
 
 - [Go Documentation](https://go.dev/doc/) - Official Go documentation
 - [Go Tour](https://go.dev/tour/) - Interactive introduction to Go
 - [Temporal Documentation](https://docs.temporal.io) - Complete Temporal guide
 - [Temporal Samples](https://github.com/temporalio/samples-go) - Example projects
+- Visit [learn.temporal.io](https://learn.temporal.io)
 - [Fiber Framework](https://docs.gofiber.io/) - Fast web framework documentation
 - [Go by Example](https://gobyexample.com/) - Learn Go with examples
 
@@ -575,17 +582,29 @@ Once you're comfortable with this boilerplate:
 ### worker-business-logic-project
 - **Temporal SDK** (`go.temporal.io/sdk`) - Worker library to execute workflows and activities
 
-## License
 
-This is a boilerplate project. Feel free to use it however you want!
+**License**
 
-## Questions or Issues?
+MIT License
 
-If you're stuck:
-1. Check the terminal output for error messages
-2. Verify all services are running (Temporal + Worker + API)
-3. Check the Temporal Web UI at [http://localhost:8233](http://localhost:8233) for workflow execution details
-4. Review the code comments in each file
-5. Read the Temporal documentation at [docs.temporal.io](https://docs.temporal.io)
+Copyright (c) 2025 Darshit Vvora
 
-Happy coding!
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
